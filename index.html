@@ -60,6 +60,7 @@ button{
 
 <div>
   <button onclick="playSequence()">▶ Rejouer</button>
+  <button onclick="playRandomSequence()">🎲 Jouer aléatoire</button>
   <button onclick="stopAll()">⏹ Stop</button>
   <button onclick="clearSequence()">🗑 Effacer</button>
   <button onclick="exportSequenceAudio()">🎧 Télécharger audio</button>
@@ -70,7 +71,7 @@ button{
 <h3>Séquence :</h3>
 <div id="sequenceDisplay">(aucune sélection)</div>
 
-<!-- AUDIOS (GitHub Pages) -->
+<!-- AUDIOS -->
 <audio id="Baleine1" src="sounds/baleine1.mp3"></audio>
 <audio id="Baleine2" src="sounds/baleine2.mp3"></audio>
 <audio id="Baleine3" src="sounds/baleine3.mp3"></audio>
@@ -81,6 +82,8 @@ button{
 /* ===== ÉTAT ===== */
 let sequence = [];
 let activeAudios = [];
+
+const ALL_SOUNDS = ["Baleine1","Baleine2","Baleine3","Baleine4","Baleine5"];
 
 const seqEl = document.getElementById("sequenceDisplay");
 const statusEl = document.getElementById("status");
@@ -159,6 +162,23 @@ function clearSequence(){
   setStatus("Séquence effacée");
 }
 
+/* ===== PHRASE ALÉATOIRE ===== */
+function playRandomSequence(){
+  stopAll();
+
+  const length = Math.floor(Math.random() * 4) + 3; // entre 3 et 6 sons
+  sequence = [];
+
+  for(let i=0;i<length;i++){
+    const rand = ALL_SOUNDS[Math.floor(Math.random() * ALL_SOUNDS.length)];
+    sequence.push(rand);
+  }
+
+  renderSequence();
+  setStatus("Phrase aléatoire");
+  playSequence();
+}
+
 /* ===== EXPORT AUDIO WAV ===== */
 async function exportSequenceAudio(){
   if(sequence.length === 0){
@@ -184,11 +204,7 @@ async function exportSequenceAudio(){
   let totalLength = 0;
   buffers.forEach(b => totalLength += b.length);
 
-  const finalBuffer = audioCtx.createBuffer(
-    1,
-    totalLength,
-    audioCtx.sampleRate
-  );
+  const finalBuffer = audioCtx.createBuffer(1, totalLength, audioCtx.sampleRate);
 
   let offset = 0;
   buffers.forEach(buffer => {
