@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<title>Phrase Baleine — Google Drive FIX</title>
+
+<style>
+body{
+  background: linear-gradient(#023047,#219ebc);
+  color:white;
+  font-family: Arial;
+  text-align:center;
+  padding:24px;
+}
+button{
+  padding:10px 16px;
+  margin:6px;
+  border-radius:10px;
+  border:0;
+  cursor:pointer;
+  font-size:15px;
+}
+#sequenceDisplay{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:center;
+  margin-top:12px;
+}
+.bubble{
+  background:rgba(255,255,255,0.15);
+  padding:8px 14px;
+  border-radius:18px;
+}
+.status{margin-top:12px;font-size:14px;}
+</style>
+</head>
+
+<body>
+
+<h1>🐋 Phrase Baleine</h1>
+
+<div>
+  <button onclick="addSound('Baleine1')">Baleine 1</button>
+  <button onclick="addSound('Baleine2')">Baleine 2</button>
+  <button onclick="addSound('Baleine3')">Baleine 3</button>
+  <button onclick="addSound('Baleine4')">Baleine 4</button>
+  <button onclick="addSound('Baleine5')">Baleine 5</button>
+</div>
+
+<div>
+  <button onclick="playSequence()">▶ Rejouer</button>
+  <button onclick="stopAll()">⏹ Stop</button>
+  <button onclick="clearSequence()">🗑 Effacer</button>
+</div>
+
+<div id="status" class="status">Statut : prêt</div>
+<h3>Séquence :</h3>
+<div id="sequenceDisplay">(aucune sélection)</div>
+
+<script>
+/* ==== CONFIG GOOGLE DRIVE ==== */
+const DRIVE_URLS = {
+  Baleine1: "https://drive.google.com/uc?export=download&id=1jtnyP8xnm9bz7wA0Z4MByUOiQBMqzRom",
+  Baleine2: "https://drive.google.com/uc?export=download&id=1dReEbl120yqXLobU9XJ579_oJS6cpute",
+  Baleine3: "https://drive.google.com/uc?export=download&id=1dNTitwfctkddUAzGOL9Xu2kdKPo_j4uO",
+  Baleine4: "https://drive.google.com/uc?export=download&id=1Fkf_fdifX4qhJg60s8DXkD--Fplc2eNp",
+  Baleine5: "https://drive.google.com/uc?export=download&id=1CjU1CUHSTCkZC6jlX5vJ8AlsHr2P9yNc"
+};
+
+/* ==== ÉTAT ==== */
+let sequence = [];
+let activeAudios = [];
+const cache = {}; // sons chargés
+
+const seqEl = document.getElementById("sequenceDisplay");
+const statusEl = document.getElementById("status");
+
+function setStatus(t){ statusEl.textContent="Statut : "+t; }
+
+function renderSequence(){
+  seqEl.innerHTML="";
+  if(sequence.length===0){
+    seqEl.textContent="(aucune sélection)";
+    return;
+  }
+  sequence.forEach((s,i)=>{
+    const d=document.createElement("div");
+    d.className="bubble";
+    d.textContent=(i+1)+". "+s;
+    seqEl.appendChild(d);
+  });
+}
+
+/* ==== AUDIO DRIVE SAFE ==== */
+async function loadFromDrive(id){
+  if(cache[id]) return cache[id];
+
+  setStatus("Chargement "+id+"...");
+  const res = await fetch(DRIVE_URLS[id]);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  cache[id] = url;
+  return url;
+}
+
+async function playImmediate(id){
+  const url = await loadFromDrive(id);
+  const a = new Audio(url);
+  a.play();
+  activeAudios.push(a);
+  a.onended=()=>activeAudios=activeAudios.filter(x=>x!==a);
+}
+
+function addSound(id){
+  sequence.push(id);
+  renderSequence();
+  playImmediate(id);
+}
+
+function playSequence(){
+  if(sequence.length===0) return;
+  let i=0;
+  function next(){
+    if(i>=sequence.length){
+      setStatus("Lecture terminée");
+      return;
+    }
+    playImmediate(sequence[i]).then(()=>{
+      const last=activeAudios.at(-1);
+      if(last) last.onended=()=>{i++;next();}
+      else {i++;next();}
+    });
+  }
+  setStatus("Lecture...");
+  next();
+}
+
+function stopAll(){
+  activeAudios.forEach(a=>{a.pause();a.currentTime=0});
+  activeAudios=[];
+  setStatus("Arrêté");
+}
+
+function clearSequence(){
+  sequence=[];
+  renderSequence();
+  setStatus("Séquence effacée");
+}
+
+renderSequence();
+</script>
+
+</body>
+</html>
